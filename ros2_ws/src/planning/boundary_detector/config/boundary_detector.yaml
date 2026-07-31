@@ -1,4 +1,24 @@
 boundary_detector_node:
   ros__parameters:
-    lookahead_distance: 15.0   # m — cones within this range used for Delaunay
+    # Keep this above the controller high-speed lookahead (7 m/s * 2.0 = 14 m),
+    # but avoid pulling in far hairpin branches from the other side of a compact map.
+    lookahead_distance: 15.0   # m - cones within this range used for online centerline
     desired_velocity: 7.0      # m/s — waypoint velocity (overridden by path_generator)
+    local_pairing_min_streak: 3 # cycles before geometry-only pairing fallback
+    # If one color is nearly missing, use local left/right pairing immediately.
+    local_pairing_color_imbalance_ratio: 0.20
+    delaunay_min_waypoints: 3  # reject shorter Delaunay fallbacks; they often reverse in tight turns
+
+    # Frozen centerline built once from the confirmed closed cone map.
+    global_pairing_min_width: 1.5
+    global_pairing_max_width: 7.5
+    global_pairing_dedup_distance: 0.75
+    # If sparse side-label errors break the colored loop, estimate each cone's
+    # boundary tangent and retain only cross-track pairs nearly perpendicular to it.
+    global_geometry_neighbor_count: 8
+    global_geometry_neighbor_distance: 5.0
+    global_geometry_max_tangent_alignment: 0.45
+    global_max_segment_length: 10.0
+    global_max_closure_distance: 8.0
+    global_min_waypoints: 20
+    global_min_coverage_ratio: 0.60

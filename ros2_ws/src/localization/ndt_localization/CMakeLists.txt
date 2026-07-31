@@ -26,7 +26,7 @@ target_include_directories(ndt_localization_node PUBLIC
 )
 target_link_libraries(ndt_localization_node ${PCL_LIBRARIES})
 ament_target_dependencies(ndt_localization_node
-  rclcpp sensor_msgs geometry_msgs nav_msgs wuta_msgs pcl_conversions
+  rclcpp sensor_msgs geometry_msgs nav_msgs visualization_msgs wuta_msgs pcl_conversions
 )
 
 # Map saver node
@@ -45,8 +45,14 @@ ament_target_dependencies(map_saver_node
 install(TARGETS ndt_localization_node map_saver_node
   DESTINATION lib/${PROJECT_NAME}
 )
-install(DIRECTORY config/ launch/
+install(DIRECTORY config/
   DESTINATION share/${PROJECT_NAME}
 )
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/launch")
+  install(DIRECTORY launch/
+    DESTINATION share/${PROJECT_NAME}
+  )
+endif()
 
 ament_package()

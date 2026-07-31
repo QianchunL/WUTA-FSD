@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(wuta_msgs REQUIRED)
 find_package(autoware_msgs REQUIRED)
@@ -14,7 +15,7 @@ find_package(autoware_msgs REQUIRED)
 file(GLOB PATHPLANNING_SRCS thirdparty/pathplanning/src/*.cpp)
 
 add_library(pathplanning STATIC ${PATHPLANNING_SRCS})
-target_include_directories(pathplanning PUBLIC thirdparty/pathplanning/include)
+target_include_directories(pathplanning PUBLIC thirdparty/pathplanning/include include)
 
 add_executable(boundary_detector_node src/boundary_detector_node.cpp)
 
@@ -28,6 +29,7 @@ target_link_libraries(boundary_detector_node pathplanning)
 ament_target_dependencies(boundary_detector_node
   rclcpp
   geometry_msgs
+  std_msgs
   visualization_msgs
   wuta_msgs
   autoware_msgs

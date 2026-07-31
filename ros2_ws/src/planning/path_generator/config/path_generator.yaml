@@ -2,12 +2,58 @@ path_generator_node:
   ros__parameters:
     # TRACKDRIVE
     trackdrive_velocity: 7.0       # m/s
+    trackdrive_resample_spacing: 1.0 # m
+    trackdrive_min_velocity: 3.0   # m/s, lower bound for tight corners
+    trackdrive_lateral_accel_limit: 4.0 # m/s^2, curvature speed cap
+    # Lap 1 retains the validated 7 m/s profile. Laps 2 and 3 progressively
+    # raise the cap only after the frozen global centerline is accepted.
+    trackdrive_race_lap2_velocity: 9.0 # m/s
+    trackdrive_race_velocity: 10.0 # m/s
+    trackdrive_race_min_velocity: 4.0 # m/s
+    trackdrive_race_lateral_accel_limit: 6.0 # m/s^2
+    trackdrive_min_forward_target: 0.5 # m, reject locally reversed centerlines
+    trackdrive_short_centerline_velocity: 3.0 # m/s, cap unstable 2-3 point fallback paths
+    trackdrive_short_centerline_points: 3 # source centerline points at or below this are speed-capped
+    trackdrive_global_horizon_distance: 40.0 # m, local slice of frozen loop
+    trackdrive_global_search_points: 24 # bounded progress search avoids nearby-branch jumps
+    trackdrive_global_min_points: 20 # distinguish a frozen loop from local EXPLORE paths
+    trackdrive_global_publish_period_sec: 0.10
+    trackdrive_full_speed_forward_distance: 15.0 # m
+    trackdrive_low_confidence_velocity: 3.0 # m/s
+    trackdrive_confidence_slow_threshold: 0.45
+    trackdrive_confidence_full_threshold: 0.75
+    localization_timeout_sec: 0.50
 
     # SKIDPAD (FSG standard geometry)
     skidpad_radius: 9.125          # m
     skidpad_velocity: 5.0          # m/s
     skidpad_points: 72             # waypoints per circle (every 5 deg)
+    # Fixed map reference matching WUTA-SIM/perception_simulation/tracks/skidpad.yaml.
+    # The path never follows the current localization pose.
+    skidpad_start_x: 0.0           # m, crossing point
+    skidpad_start_y: 0.0           # m, crossing point
+    skidpad_start_yaw: 0.0         # rad, entry/exit direction
+    # FSAC start position: vehicle reference is 15 m before the timing line.
+    # Coordinates are local to the crossing reference above.
+    skidpad_entry_x: -15.0         # m
+    skidpad_entry_y: 0.0           # m
+    skidpad_exit_length: 25.0      # m, stop point after the fourth lap
+    skidpad_braking_distance: 10.0 # m, linear deceleration before the stop
+    # Runtime analysis artifact; relative paths resolve from WUTA-FSD.
+    skidpad_csv_path: ros2_ws/log/trajectory/skidpad_trajectory.csv
 
-    # ACCELERATION
-    acceleration_length: 75.0      # m
-    acceleration_velocity: 15.0    # m/s
+    # Driven Trajectory RViz marker: smooth only the displayed localization
+    # history; controller and mapping continue to use raw /localization/pose.
+    driven_trajectory_smoothing_alpha: 0.20
+    driven_trajectory_min_distance: 0.10  # m
+
+    # ACCELERATION — matches perception_simulation/tracks/acceleration.yaml.
+    # The 75 m timed run begins at x=0.0; brake only after its finish line and
+    # stop at the end of the marked 100 m exit lane.
+    acceleration_start_x: -0.30      # m, start-position line
+    acceleration_start_y: 0.0        # m
+    acceleration_start_yaw: 0.0      # rad
+    acceleration_timing_start_x: 0.0 # m
+    acceleration_length: 75.0        # m, timed distance
+    acceleration_stopping_distance: 100.0 # m, post-finish exit lane
+    acceleration_velocity: 15.0      # m/s

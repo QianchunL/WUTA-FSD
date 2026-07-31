@@ -9,6 +9,36 @@ controller_node:
     ld_ratio: 2.0           # lookahead = velocity × ratio
     min_lookahead: 2.0      # m — clamp at low speed
     max_lookahead: 20.0     # m — clamp at high speed
+    max_progress_advance: 4 # waypoints per 50 Hz control update; keeps skidpad progress continuous
+    # Fixed local preview for the 9.125 m skidpad circles.  This avoids the
+    # generic 10 m preview shortcutting the curvature changes at the crossing.
+    skidpad_lookahead: 3.0  # m
+    # Trackdrive uses upcoming path curvature rather than target velocity.
+    # It keeps a long preview on straights and smoothly shortens it before
+    # sharp turns; `trackdrive_lookahead` remains the upper bound.
+    trackdrive_dynamic_lookahead: true
+    trackdrive_lookahead: 5.0  # m, straight-line upper bound
+    trackdrive_min_lookahead: 3.0  # m, sharp-turn lower bound
+    trackdrive_curvature_preview_distance: 12.0  # m ahead to inspect
+    trackdrive_straight_curvature: 0.03  # 1/m, begin shortening above this
+    trackdrive_corner_curvature: 0.16   # 1/m, use minimum preview at/above this
+    trackdrive_lookahead_rate_limit: 3.0  # m/s, prevents preview jumps
+    # Trackdrive local mapping can briefly emit an unusable/reversed centerline.
+    # Hold the last valid command at low speed for a short window instead of
+    # stopping on a single bad frame; stop if the outage persists.
+    trackdrive_target_loss_hold_time: 0.5  # s
+    trackdrive_target_loss_hold_speed: 2.0 # m/s
+    # Hold the planned Trackdrive speed at 3 m/s while the initial online map
+    # and local centreline settle. The timer starts at the first valid target.
+    trackdrive_start_speed: 3.0           # m/s
+    trackdrive_start_speed_duration: 4.0  # s
 
     # Control loop
     control_rate_hz: 50
+    # Maximum steering command change.  Limits pose-noise-induced chatter
+    # while retaining enough response for the skidpad entry.
+    max_steering_rate_deg_s: 180.0
+
+    # Skidpad completion: the vehicle must stop at the 25 m exit endpoint.
+    finish_position_tolerance: 0.75  # m
+    finish_speed_threshold: 0.2      # m/s

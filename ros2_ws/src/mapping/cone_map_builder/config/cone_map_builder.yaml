@@ -1,19 +1,41 @@
 cone_map_builder:
   ros__parameters:
-    # Cone merging: cones closer than this are considered the same physical cone
+    # Cone merging: keep this below tight-corner cone spacing. A large radius
+    # (for example 1.2 m) can merge neighbouring cones in Trackdrive hairpins
+    # and make the online centerline disappear or fold back.
     merge_distance: 0.5         # m
+    # A separate, still sub-spacing radius removes parallel tracks created by
+    # localization corrections after their running centroids have stabilized.
+    consolidation_distance: 1.0 # m
 
     # Only publish cones seen at least this many times (noise filter)
-    min_hit_count: 2
+    min_hit_count: 3
 
     # Loop closure detection
     loop_closure_distance: 3.0  # m — distance back to start position
     min_cones_for_closure: 10   # Minimum confirmed cones before checking closure
-    start_skip_distance: 5.0    # m — don't check closure until we've moved this far
+    mapping_laps: 1             # Freeze when formal /system/lap_count reaches this
+    start_skip_distance: 30.0   # m — accumulated travel required before closure
+    loop_closure_heading_tolerance_deg: 60.0 # require start-direction agreement
 
-    # Color heuristic: blue=left, yellow=right based on vehicle heading
-    # Set false if camera detection will provide colors downstream
+    # Color heuristic: preserve upstream blue/yellow/orange colors, and only
+    # assign blue=left/yellow=right when a detection arrives as UNKNOWN.
+    # Set false once camera/detection_fusion provides complete colors.
     assign_colors: true
+
+    # Sensor messages retain acquisition timestamps. Only the TF at that
+    # timestamp is valid for map integration; missing transforms are queued
+    # briefly and retried instead of using a motion-biased latest TF.
+    tf_lookup_timeout_sec: 0.1
+    use_latest_tf_fallback: false
+    pending_detection_timeout_sec: 0.5
+    max_pending_detections: 20
+
+    # A valid sensor-time TF cannot make a catastrophically wrong EKF pose
+    # correct. Reject that interval rather than adding a second copy of the
+    # same physical cones at the jumped map location.
+    localization_jump_threshold: 1.0  # m between consecutive pose callbacks
+    localization_jump_cooldown_sec: 2.0
 
     # Path to save cone map YAML when loop is closed
     map_save_path: "/tmp/wuta_cone_map.yaml"

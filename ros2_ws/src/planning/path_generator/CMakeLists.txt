@@ -5,7 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(wuta_msgs REQUIRED)
 find_package(autoware_msgs REQUIRED)
 
@@ -17,7 +20,10 @@ target_include_directories(path_generator_node PUBLIC
 
 ament_target_dependencies(path_generator_node
   rclcpp
+  ament_index_cpp
   geometry_msgs
+  std_msgs
+  visualization_msgs
   wuta_msgs
   autoware_msgs
 )

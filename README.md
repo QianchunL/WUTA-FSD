@@ -33,14 +33,14 @@
   ConeArray + pose ──→ cone_map_builder ──→ ConeMap（loop closure检测）
 
 规划层
-  ConeMap ──→ boundary_detector(Delaunay) ──→ path_generator ──→ Lane
+  ConeMap ──→ boundary_detector(局部路径/冻结全局中心线) ──→ path_generator ──→ Lane
   三模式：trackdrive / skidpad / acceleration
 
 控制层
   Lane + pose ──→ controller(Pure Pursuit) ──→ Command → VCU
 
 系统管理
-  mission_manager：状态机，IDLE→EXPLORE→RACE→FINISH
+  mission_manager：唯一状态机发布者，IDLE→READY→EXPLORE→…→FINISH
 ```
 
 ---
@@ -123,6 +123,24 @@ ros2 run controller controller_node \
   --ros-args --params-file src/control/controller/config/controller.yaml
 ```
 
+### 仿真闭环说明
+
+由上层 `WUTA-SIM/simulator_bringup` 启动时，`mission_manager` 是
+`/system/mission_state` 的唯一发布者：LiDAR 与定位 ready 后进入 `READY`，收到
+`/system/start_command=true` 后进入 `EXPLORE`。Trackdrive 第一圈用局部中心线建图；闭环后，
+`boundary_detector` 仅从冻结的 `ConeMap` 生成有序全局中心线。地图闭合、地图质量、定位质量、
+全局中心线和首圈完成五项条件同时满足后进入 `RACE`。`mission_manager` 根据
+`/localization/pose` 穿越有限起终线发布 `/system/lap_count`，第三圈后进入 `FINISH`。
+Skidpad/Acceleration 仍由控制器停车后经 `/system/mission_complete=true` 完成。不要与
+`simulation_bridge` 或外部节点同时发布 MissionState。
+
+Trackdrive 默认分圈速度上限为第一圈 7 m/s、第二圈 9 m/s、第三圈 10 m/s，并同时受曲率、
+前向路径长度、`/planning/path_confidence` 和 `/system/localization_confidence` 限制。
+第一圈保留已经验证的速度，不因建图阶段无条件降速；低置信度或短路径会自动限制到保守速度。
+
+控制侧使用连续的 Pure Pursuit 曲率，并以 `max_steering_rate_deg_s` 限制转向命令变化；该参数
+是仿真初值，实车必须依转向执行器反馈与允许转向速率标定。
+
 ### 切换任务模式
 
 ```bash
@@ -131,6 +149,27 @@ ros2 topic pub /system/mission_mode_cmd std_msgs/msg/String "data: 'skidpad'"
 ros2 topic pub /system/mission_mode_cmd std_msgs/msg/String "data: 'acceleration'"
 ros2 topic pub /system/mission_mode_cmd std_msgs/msg/String "data: 'trackdrive'"
 ```
+
+### 仿真 Skidpad 闭环
+
+集成仿真由主仓库的启动脚本负责构建与编排；不要在本子仓库中单独拼接 INS、KISS-ICP 和
+EKF 节点。于主仓库根目录运行：
+
+```bash
+./start_simulator.sh --rviz track_file:=skidpad mission_mode:=skidpad
+```
+
+该模式从 `(-15, 0)` 沿 `+X` 进入，依次完成下方右圆两圈、上方左圆两圈，并沿 `+X` 出口
+在 25 m 内停车。默认使用 INS + KISS-ICP + EKF；若只需真值定位调试，使用：
+
+```bash
+./start_simulator.sh --skip-build \
+  track_file:=skidpad mission_mode:=skidpad \
+  use_ground_truth_localization:=true
+```
+
+Skidpad 固定轨迹的分析 CSV 写至
+`ros2_ws/log/trajectory/skidpad_trajectory.csv`（相对于 `WUTA-FSD` 根目录）。
 
 ---
 
